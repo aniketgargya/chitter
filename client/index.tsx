@@ -19,7 +19,9 @@ const COMMIT = String.check(process.env.GIT_COMMIT)
 export interface ChitterContext {
   connected: boolean
   rooms: RoomID[]
-  join: (room: RoomID, onReceive: (message: ChitterMessage) => void) => void
+  messages: ChitterMessage[]
+  join: (room: RoomID) => void
+  send: (message: ChitterMessage) => void
 }
 
 // Context provider component that will wrap the entire app.
@@ -40,6 +42,7 @@ export const ChitterProvider: React.FC<ChitterProviderProps> = ({ server, childr
   // on the context provider
   const [connected, setConnected] = useState(false)
   const [rooms, setRooms] = useState<RoomID[]>([])
+  const [messages, setMessages] = useState<ChitterMessage[]>([])
 
   // Set up the websocket connection
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
@@ -77,6 +80,8 @@ export const ChitterProvider: React.FC<ChitterProviderProps> = ({ server, childr
         if (RoomsMessage.guard(message)) {
           console.log(message.rooms)
           setRooms(message.rooms)
+        } else if (ChitterMessage.guard(message)) {
+          setMessages((m) => [message, ...m])
         }
       })
     )
@@ -92,7 +97,14 @@ export const ChitterProvider: React.FC<ChitterProviderProps> = ({ server, childr
     connection.current?.send(JSON.stringify(joinMessage))
   }, [])
 
-  return <ChitterContext.Provider value={{ connected, rooms, join }}>{children}</ChitterContext.Provider>
+  const send = useCallback((message: ChitterMessage) => {
+    message.clientID = clientID.current
+    connection.current?.send(JSON.stringify(message))
+  }, [])
+
+  return (
+    <ChitterContext.Provider value={{ connected, rooms, messages, join, send }}>{children}</ChitterContext.Provider>
+  )
 }
 
 ChitterProvider.propTypes = {
@@ -110,7 +122,11 @@ export const useChitter = (): ChitterContext => {
 export const ChitterContext = createContext<ChitterContext>({
   connected: false,
   rooms: [],
+  messages: [],
   join: (): void => {
+    throw new Error("ChitterProvider not set")
+  },
+  send: (): void => {
     throw new Error("ChitterProvider not set")
   },
 })
