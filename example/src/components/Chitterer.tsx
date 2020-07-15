@@ -44,9 +44,10 @@ export interface ChittererProps {
   style: CSSProperties
 }
 export const Chitterer: React.FC<ChittererProps> = ({ room, ...props }) => {
-  const { connected, messages, join, send } = useChitter()
+  const { connected, join } = useChitter()
   const classes = useStyles()
-  const [unsentMessages, setUnsentMessage] = useState<ChitterMessage[]>([])
+
+  const [messages, setMessages] = useState<ChitterMessage[]>([])
 
   // useEffect hooks run after the initial render and then whenever their dependencies change
   // Here we join the room this component is configured to connect to
@@ -54,13 +55,11 @@ export const Chitterer: React.FC<ChittererProps> = ({ room, ...props }) => {
   // but is something we may need to update later
   useEffect(() => {
     if (connected) {
-      join(room)
+      join(room, message => {
+        setMessages(m => m.concat(message))
+      })
     }
-  }, [connected, join])
-
-  useEffect(() => {
-    setUnsentMessage(u => u.filter(({ id }) => messages.every(({ id: messageId }) => id != messageId)))
-  }, [messages])
+  }, [connected, join, room, setMessages])
 
   // Callbacks for our input element below
   // You can define these right on the element itself, but then they are recreated on every render
@@ -91,8 +90,7 @@ export const Chitterer: React.FC<ChittererProps> = ({ room, ...props }) => {
           })
           // TODO: Actually send the message
           // For now, just add it to our message list
-          send(newMessage)
-          setUnsentMessage(u => [newMessage, ...u])
+          setMessages(m => [newMessage, ...m])
           setInput("")
         } else {
           setInput(i => i + "\n")
@@ -101,22 +99,12 @@ export const Chitterer: React.FC<ChittererProps> = ({ room, ...props }) => {
         event.preventDefault()
       }
     },
-    [room]
+    [room, setMessages]
   )
 
   return (
     <div className={classes.chitterer} {...props}>
       <div className={classes.messages}>
-        {unsentMessages.map((message, i) => (
-          <div key={i} className={classes.message}>
-            <P>Sending: {message.contents}</P>
-          </div>
-        ))}
-        {unsentMessages.map((message, i) => (
-          <div key={i} className={classes.message}>
-            <P>Sending: {message.contents}</P>
-          </div>
-        ))}
         {messages.map((message, i) => (
           <div key={i} className={classes.message}>
             <P>{message.contents}</P>

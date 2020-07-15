@@ -8,7 +8,7 @@ import websocket from "koa-easy-ws"
 import WebSocket from "ws"
 import { PongWS, filterPingPongMessages } from "@cs125/pingpongws"
 
-import { ConnectionQuery, Versions, JoinMessage, RoomsMessage, ChitterMessage } from "../types"
+import { ConnectionQuery, Versions, JoinMessage, RoomsMessage } from "../types"
 
 import { String } from "runtypes"
 const VERSIONS = {
@@ -79,13 +79,6 @@ router.get("/", async (ctx) => {
 
         const roomsMessage = RoomsMessage.check({ type: "rooms", rooms: Object.keys(clientIDtoRooms[clientID]) })
         ws.send(JSON.stringify(roomsMessage))
-      } else if (ChitterMessage.guard(message)) {
-        const { room } = message
-        Object.keys(roomToClientIDs[room])
-          .filter((clientID) => roomToClientIDs[room][clientID])
-          .forEach((clientID) => {
-            clientIDtoWebsocket[clientID].send(JSON.stringify(message))
-          })
       } else {
         // As long as the if-else above is exhaustive over all possible client messages,
         // this is a good sanity check
