@@ -6,7 +6,7 @@ import commonJS from "rollup-plugin-commonjs"
 export default ["cjs", "es"].map((format) => ({
   input: "./client/index.tsx",
   output: {
-    format: "cjs",
+    format,
     file: `./client/dist/index.${format}.js`,
     sourcemap: true,
     strict: false,
@@ -27,6 +27,7 @@ export default ["cjs", "es"].map((format) => ({
       include: "node_modules/**",
       namedExports: {
         runtypes: ["Record", "Partial", "Number", "String", "Array", "Static", "Union"],
+        events: ["EventEmitter"],
       },
     }),
   ],
